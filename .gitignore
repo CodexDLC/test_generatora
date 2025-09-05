@@ -1,3 +1,18 @@
-# Godot 4+ specific ignores
+# --- Godot ---
 .godot/
-/android/
+.import/
+.godot/imported/
+export/
+*.translation
+
+# --- IDE/OS ---
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+
+# --- Python (если будет) ---
+.venv/
+__pycache__/
+*.pyc
+
