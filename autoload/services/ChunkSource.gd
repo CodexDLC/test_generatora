@@ -1,10 +1,12 @@
-# autoload/services/ChunkSource.gd
-class_name ChunkSource
+# Этот сервис хранит глобальные константы мира.
+# Он должен быть первым в списке Autoload.
 extends Node
-## Контракт: вернуть список доступных чанков и загрузить конкретный чанк.
 
-func list_coords() -> Array:        # [Vector2i(cx,cz), ...]
-	return []
+# Путь к папке с данными ОДНОГО сгенерированного мира.
+const WORLD_DATA_PATH = "res://data/world_location/25/" # <- Убедись, что сид верный
 
-func load_chunk(cx: int, cz: int) -> Dictionary: # возвращает словарь чанка
-	return {}
+# Размер чанка в метрах/юнитах. Должен быть равен "size" в generator/presets/base_default.json
+const CHUNK_SIZE = 128
+
+# Максимальная высота ландшафта в метрах. Из "max_height_m" в том же JSON.
+const MAX_TERRAIN_HEIGHT = 45.0

@@ -17,21 +17,22 @@ config/icon="res://assets/icon.svg"
 
 [autoload]
 
-"сhunksource"="*res://autoload/services/ChunkSourceFolder.gd"
-chunkrenderer="*res://autoload/services/ChunkRenderer.gd"
-chunkstreamer="*res://autoload/services/ChunkStreamer.gd"
-PathfinderService="*res://autoload/services/Pathfinder.gd.gd"
+ChunkSourceService="*res://autoload/services/ChunkSource.gd"
+MapLoaderService="*res://autoload/services/MapLoader.gd"
+ChunkRendererService="*res://autoload/services/ChunkRenderer.gd"
+PathfinderService="*res://autoload/services/Pathfinder.gd"
+ChunkStreamerService="*res://autoload/services/ChunkStreamer.gd"
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=720
+window/size/viewport_height=480
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/script-ide/plugin.cfg", "res://addons/terrain_3d/plugin.cfg")
 
 [input]
 
