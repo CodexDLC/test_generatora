@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://bm0co01f8qolk"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xbqir"]
+albedo_color = Color(0.2, 0.4, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_c003m"]
+material = SubResource("StandardMaterial3D_xbqir")
+
+[node name="WATER_DEEP" type="MeshInstance3D"]
+mesh = SubResource("BoxMesh_c003m")

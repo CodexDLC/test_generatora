@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://cmd4jloq5a71v"]
+
+[ext_resource type="PackedScene" uid="uid://bpkwvjsnn1ajn" path="res://assets/Base Characters/Superhero_Female.gltf" id="1_8afob"]
+[ext_resource type="Script" uid="uid://tovmsspokyex" path="res://scenes/player/player.gd" id="1_dovo2"]
+[ext_resource type="Script" uid="uid://70j7ynaed6kk" path="res://scenes/player/camera_rig.gd" id="3_gmlin"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_dovo2"]
+height = 1.8
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_dovo2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.851912, 0)
+shape = SubResource("CapsuleShape3D_dovo2")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Superhero_Female2" parent="Pivot" instance=ExtResource("1_8afob")]
+
+[node name="CameraRig" type="Node3D" parent="."]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0, 0)
+script = ExtResource("3_gmlin")
+
+[node name="CameraPivot" type="Node3D" parent="CameraRig"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12)
+current = true

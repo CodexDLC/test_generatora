@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://cy2w5b5ry13a0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6tf2g"]
+albedo_color = Color(0.819608, 0.698039, 0.501961, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_kijli"]
+material = SubResource("StandardMaterial3D_6tf2g")
+
+[node name="ROAD" type="MeshInstance3D"]
+mesh = SubResource("BoxMesh_kijli")

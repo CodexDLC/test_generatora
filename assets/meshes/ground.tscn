@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://cveasyciojhgn"]
+
+[ext_resource type="PackedScene" uid="uid://cw8mrms3y5xrp" path="res://assets/scr/3d_model_grid/cliff/cliff_block_stone.glb" id="1_qiacd"]
+
+[node name="ground" type="MeshInstance3D"]
+
+[node name="cliff_block_stone2" parent="." instance=ExtResource("1_qiacd")]
