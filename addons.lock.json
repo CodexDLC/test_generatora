@@ -1,0 +1,4 @@
+[
+  {"name": "terrain3d", "repo": "https://github.com/<owner>/terrain3d.git", "rev": "v1.6.0"},
+  {"name": "scatter",   "repo": "https://github.com/<owner>/scatter.git",   "rev": "a1b2c3d"}
+]

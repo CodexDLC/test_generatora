@@ -2,7 +2,7 @@
 extends Node3D
 
 # Убедитесь, что пути к вашим сценам здесь правильные
-const PLAYER_SCENE: PackedScene = preload("res://scenes/demoplayer/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://scenes/player/player.tscn")
 const MAP_SCENE: PackedScene = preload("res://scenes/map/MapRoot.tscn")
 const UI_SCENE: PackedScene = preload("res://scenes/debug_ui/UI.tscn")
 

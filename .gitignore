@@ -1,19 +1,44 @@
-# Godot 4 editor cache
-.godot/
+# --- Игнорим ВСЁ по умолчанию ---
+*
 
-# Кэш импорта (в Godot 4 лежит в .godot/, но на всякий случай)
+# Разрешаем обход директорий (иначе Git не дойдёт до файлов)
+!*/
+
+# --- Разрешаем только код/текст ---
+# Godot сценарии/ресурсы (текстовые)
+!*.gd
+!*.tscn
+!*.tres
+!*.gdshader
+!*.shader
+!project.godot
+
+# Python и конфиги
+!*.py
+!*.pyi
+!pyproject.toml
+!poetry.lock
+!requirements*.txt
+!*.json
+!*.toml
+!*.yml
+!*.yaml
+!.editorconfig
+!.gitignore
+!.gitattributes
+!README.md
+!LICENSE
+
+# --- На всякий случай явно игнорим тяжёлое/сгенерённое ---
+.godot/
 **/.import/
 **/imported/
-
-# Локальные/временные
-*.tmp
-*.temp
-*.log
-*.md5
-*.translation
-Thumbs.db
-.DS_Store
-
-# Твоя сгенерёнка (пример — подстрой под себя)
-data/world_location/
+addons/
 artifacts/
+data/
+build/
+dist/
+user://
+*.stex
+*.ctex
+*.import

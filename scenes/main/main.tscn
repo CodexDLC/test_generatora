@@ -17,11 +17,6 @@ ambient_light_color = Color(0.547078, 0.623724, 0.892234, 1)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_hyk8p")
-center_chunk_pos = null
-region_size_hint = null
-vertex_spacing = null
-spawn_clearance = null
-fallback_y = null
 
 [node name="FreeCamera" parent="." instance=ExtResource("2_iuonh")]
 
