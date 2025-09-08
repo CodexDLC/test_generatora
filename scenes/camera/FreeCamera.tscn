@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://t6mtfwxsfgkx"]
+
+[ext_resource type="Script" uid="uid://n6ihnavee4q" path="res://scenes/camera/FreeCamera.gd" id="1_o6211"]
+
+[node name="FreeCamera" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+script = ExtResource("1_o6211")

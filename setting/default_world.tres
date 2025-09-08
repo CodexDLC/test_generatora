@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldSettings" load_steps=2 format=3 uid="uid://cywxlrahndwsi"]
+
+[ext_resource type="Script" uid="uid://coh7udwe533un" path="res://setting/WorldSettings.gd" id="1_dy2hh"]
+
+[resource]
+script = ExtResource("1_dy2hh")
+world_id = 25
+chunk_size = 256
+vertex_spacing = 1.0
+region_size_hint = 256
+max_height = 30.0
+load_radius = 2
+metadata/_custom_type_script = "uid://coh7udwe533un"

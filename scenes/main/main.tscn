@@ -1,6 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://lvo85tbn8dg2"]
+[gd_scene load_steps=7 format=3 uid="uid://lvo85tbn8dg2"]
 
 [ext_resource type="Script" uid="uid://x02rw3v1us3i" path="res://scenes/main/main.gd" id="1_hyk8p"]
+[ext_resource type="PackedScene" uid="uid://t6mtfwxsfgkx" path="res://scenes/camera/FreeCamera.tscn" id="2_iuonh"]
+[ext_resource type="Script" uid="uid://dlop61qhhm6h3" path="res://scenes/main/world_manager.gd" id="3_k2fmo"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_hyk8p"]
 
@@ -10,12 +12,24 @@ sky_material = SubResource("ProceduralSkyMaterial_hyk8p")
 [sub_resource type="Environment" id="Environment_k2fmo"]
 background_mode = 2
 sky = SubResource("Sky_iuonh")
+ambient_light_source = 2
+ambient_light_color = Color(0.547078, 0.623724, 0.892234, 1)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_hyk8p")
+center_chunk_pos = null
+region_size_hint = null
+vertex_spacing = null
+spawn_clearance = null
+fallback_y = null
+
+[node name="FreeCamera" parent="." instance=ExtResource("2_iuonh")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_k2fmo")
+
+[node name="WorldManager" type="Node" parent="."]
+script = ExtResource("3_k2fmo")

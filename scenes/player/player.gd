@@ -1,63 +1,85 @@
-# scenes/player/Player.gd
+# res://scenes/player/player.gd
 extends CharacterBody3D
 
-# --- Экспортируемые переменные (можно настроить в Инспекторе) ---
-@export var base_speed := 5.0 # Базовая скорость персонажа в метрах/сек
+@export var MOVE_SPEED: float = 10.0
+@export var JUMP_SPEED: float = 15.0
 
-# --- Переменные для пути и движения ---
-var _path: Array[Vector2i] = [] # Массив для хранения пути в клетках
-var _current_path_index := 0   # Индекс текущей целевой точки в массиве _path
-
-# --- Встроенные функции Godot ---
-
-# _physics_process вызывается каждый физический кадр (стабильно, обычно 60 раз/сек).
-# Идеальное место для кода, связанного с движением и физикой.
-func _physics_process(delta: float) -> void:
-	# Если пути нет или мы уже дошли до конца, ничего не делаем.
-	if _path.is_empty():
-		velocity = Vector3.ZERO # Останавливаем персонажа
-		move_and_slide()
-		return
-
-	# 1. Получаем 3D-координаты следующей точки назначения.
-	# Берем 2D-координату из нашего пути и превращаем ее в 3D.
-	var target_cell: Vector2i = _path[_current_path_index]
-	# Ставим цель в центр клетки.
-	var target_position := Vector3(target_cell.x + 0.5, global_position.y, target_cell.y + 0.5)
-
-	# 2. Проверяем, достаточно ли мы близко к цели.
-	var distance_to_target = global_position.distance_to(target_position)
-	
-	if distance_to_target < 0.1: # Если дистанция меньше 10 см
-		_current_path_index += 1 # Переключаемся на следующую точку в пути
+# --- Переменные для переключения вида ---
+@export var first_person: bool = false:
+	set(p_value):
+		first_person = p_value
+		var tween: Tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		
-		# Если это была последняя точка, очищаем путь и останавливаемся.
-		if _current_path_index >= _path.size():
-			_path.clear()
-			return
+		var body_model = $Pivot/Superhero_Female2
+		
+		if first_person:
+			tween.tween_property($CameraRig/CameraPivot/Camera3D, "position:z", 0.5, 0.33)
+			tween.tween_callback(body_model.set_visible.bind(false))
+		else:
+			body_model.visible = true
+			tween.tween_property($CameraRig/CameraPivot/Camera3D, "position:z", 12.0, 0.33)
+
+# --- Переменные для отладки ---
+@export var gravity_enabled: bool = true:
+	set(p_value):
+		gravity_enabled = p_value
+		if not gravity_enabled:
+			velocity.y = 0
+			
+@export var collision_enabled: bool = true:
+	set(p_value):
+		collision_enabled = p_value
+		$CollisionShape3D.disabled = not collision_enabled
+
+@onready var camera: Camera3D = $CameraRig/CameraPivot/Camera3D
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+func _ready() -> void:
+	collision_layer = 1
+	collision_mask  = 0x000FFFFF
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	floor_snap_length = 1.0
+
+func _physics_process(delta: float) -> void:
+	# 1. Применяем гравитацию
+	if not is_on_floor() and gravity_enabled:
+		velocity.y -= gravity * delta
+
+	# 2. Обрабатываем прыжок (теперь здесь, т.к. это связано с физикой)
+	if Input.is_action_just_pressed("jump") and is_on_floor() and gravity_enabled:
+		velocity.y = JUMP_SPEED
+		
+	# 3. Получаем направление движения
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	
-	# 3. Рассчитываем направление и скорость.
-	# Вычисляем вектор направления от текущей позиции к цели.
-	var direction = (target_position - global_position).normalized()
-	# Устанавливаем скорость. velocity - это встроенное свойство CharacterBody3D.
-	velocity = direction * base_speed
+	var current_speed = MOVE_SPEED
+	if Input.is_action_pressed("move_sprint"):
+		current_speed *= 2.0
+		
+	if direction:
+		velocity.x = direction.x * current_speed
+		velocity.z = direction.z * current_speed
+	else:
+		velocity.x = move_toward(velocity.x, 0, current_speed)
+		velocity.z = move_toward(velocity.z, 0, current_speed)
 	
-	# 4. Двигаемся!
-	# move_and_slide() - это "волшебная" функция Godot, которая двигает персонажа,
-	# учитывая скорость (velocity) и столкновения с другими объектами.
+	# 4. Двигаем персонажа
 	move_and_slide()
 
-
-# --- Публичные функции ---
-
-# Эту функцию будет вызывать main.gd, чтобы дать персонажу новый путь.
-func set_path(new_path: Array[Vector2i]) -> void:
-	if new_path.is_empty():
-		_path.clear()
-		return
-		
-	# Принимаем новый путь и сбрасываем счетчик на начало.
-	# Мы удаляем первую точку, т.к. персонаж уже стоит на ней.
-	new_path.pop_front() 
-	_path = new_path
-	_current_path_index = 0
+# Обработка одиночных нажатий, не связанных с физикой
+func _unhandled_input(event: InputEvent) -> void:
+	# Обработка изменения скорости колесиком мыши
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			MOVE_SPEED = clamp(MOVE_SPEED + 1, 1, 100)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			MOVE_SPEED = clamp(MOVE_SPEED - 1, 1, 100)
+	
+	# Обработка переключателей
+	if event.is_action_just_pressed("toggle_view"):
+		first_person = !first_person
+	elif event.is_action_just_pressed("toggle_gravity"):
+		gravity_enabled = !gravity_enabled
+	elif event.is_action_just_pressed("toggle_collision"):
+		collision_enabled = !collision_enabled

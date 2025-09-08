@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://by3kr2nqbqr67"]
+[gd_scene load_steps=0 format=3 uid="uid://by3kr2nqbqr67"]
 
 [node name="DirectorySetup" type="ConfirmationDialog"]
 title = "Terrain3D Data Directory Setup"

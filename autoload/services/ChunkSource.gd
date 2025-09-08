@@ -1,12 +1,24 @@
-# Этот сервис хранит глобальные константы мира.
-# Он должен быть первым в списке Autoload.
 extends Node
+class_name ChunkSource  # проверь, что автолод ссылается именно на этот класс/файл
 
-# Путь к папке с данными ОДНОГО сгенерированного мира.
-const WORLD_DATA_PATH = "res://data/world_location/25/" # <- Убедись, что сид верный
+const WORLD_ROOT_USER := "user://data/world_location/"
+const WORLD_ID        := 25
 
-# Размер чанка в метрах/юнитах. Должен быть равен "size" в generator/presets/base_default.json
-const CHUNK_SIZE = 128
+const CHUNK_SIZE: int = 128
+const MAX_TERRAIN_HEIGHT: float = 150.0
 
-# Максимальная высота ландшафта в метрах. Из "max_height_m" в том же JSON.
-const MAX_TERRAIN_HEIGHT = 45.0
+static func world_data_path() -> String:
+	return WORLD_ROOT_USER + str(WORLD_ID) + "/"
+
+static func chunk_dir(cx: int, cz: int) -> String:
+	return "%s%d_%d/" % [world_data_path(), cx, cz]
+
+static func height_path(cx: int, cz: int) -> String:
+	return chunk_dir(cx, cz) + "heightmap.r16"
+
+# <<< ДОБАВЬ ЭТУ ФУНКЦИЮ ЗДЕСЬ >>>
+static func control_path(cx: int, cz: int) -> String:
+	return chunk_dir(cx, cz) + "control.r32"
+
+func _ready() -> void:
+	print("[ChunkSource] WORLD_DATA_PATH = ", world_data_path())

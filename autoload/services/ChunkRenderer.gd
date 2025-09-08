@@ -1,21 +1,43 @@
-# Этот сервис отвечает за визуальное отображение данных чанка в сцене.
+# res://autoload/services/ChunkRenderer.gd
 extends Node
+class_name ChunkRenderer
 
-
-# Ссылки на узлы сцены. Их установит main.gd при старте.
 var terrain: Terrain3D
-var grid_map: GridMap
+# Эта константа HMAX больше не будет использоваться, мы будем брать значение из ChunkSource
+# const HMAX: float = 90.0
 
-# Функция для "постройки" одного чанка
-func render_chunk(cx: int, cz: int, height_img: Image) -> void:
-	# Height должен быть RH (R16F) или RF (R32F). Если не RH — конвертируем.
-	if height_img.get_format() != Image.FORMAT_RH:
-		height_img.convert(Image.FORMAT_RH)
+# --- ИЗМЕНЕНИЕ: Функция теперь асинхронная, чтобы ждать физику ---
+func render_chunk(chunk_data: MapLoader.ChunkData) -> void:
+	if terrain == null or chunk_data == null:
+		printerr("[Renderer] terrain=null или chunk_data=null")
+		return
 
-	# Пока не используем splat и colormap — отдаём заглушки,
-	# НО длина массива ОБЯЗАНА быть 3.
-	var images: Array = [height_img, null, null]   # [height, control, color]
+	var rs: int = int(terrain.region_size)
+	var vs: float = terrain.vertex_spacing
 
-	var data := ChunkRendererService.terrain.get_data()
-	data.import_images(images)  # если у тебя считается регион/индексы — оставь как было, важен именно массив из 3
-	print("ChunkRendererService: Визуал для чанка %s построен." % chunk_data.chunk_pos)
+	if chunk_data.height == null or chunk_data.control == null:
+		printerr("[Renderer] нет height/control"); return
+	if chunk_data.height.get_width() != rs or chunk_data.control.get_width() != rs:
+		printerr("[Renderer] размеры карт не совпадают с region_size"); return
+
+	# Мировой сдвиг региона (в МЕТРАХ)
+	var origin_x: float = chunk_data.chunk_pos.x * rs * vs
+	var origin_z: float = chunk_data.chunk_pos.y * rs * vs
+	var world_origin := Vector3(origin_x, 0.0, origin_z)
+
+	# --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+	# Мы берем высоту из сервиса (Autoload), а не из класса
+	var hmax = ChunkSourceService.MAX_TERRAIN_HEIGHT
+	
+	var images: Array[Image] = [chunk_data.height, chunk_data.control, null]
+
+	# Импортируем геометрию и текстуры
+	terrain.data.import_images(images, world_origin, 0.0, hmax)
+
+	# Ждем один кадр физики, чтобы коллизия успела построиться
+	await get_tree().physics_frame
+	
+	# Логи для отладки
+	var half_size = rs * vs * 0.5
+	var center_pos = world_origin + Vector3(half_size, 0, half_size)
+	print("[Renderer] Чанк (%d, %d) отрисован. Центр в мире: %s" % [chunk_data.chunk_pos.x, chunk_data.chunk_pos.y, center_pos])

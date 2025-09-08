@@ -1,120 +1,153 @@
-# autoload/services/Pathfinder.gd
-class_name Pathfinder
+# res://autoload/services/Pathfinder.gd
+# Это наш "Следопыт" (Pathfinder), который умеет находить самый короткий путь
+# на карте, работая как навигатор в машине. Он использует алгоритм A* (А-звезда).
+# Путь ищется по клеткам (Vector2i). Диагонали разрешены, но без «срезания углов».
+
 extends Node
+class_name Pathfinder
 
-var _size := Vector2i.ZERO
-var _blocked_cells := {}
-var _cost_map := {}
+# --- Настройки и волшебные числа ---
+const SQRT2 := 1.41421356237
+const INF   := 1.0e30
+var allow_diagonals := true
+
+# --- Внутренняя память Следопыта ---
+var _size: Vector2i = Vector2i.ZERO
+var _blocked: Dictionary = {}
+var _cost: Dictionary = {}
+
+# Правила для разных типов клеток
+var _rules := {
+	0: {"pass": true,  "cost": 1.0},  # 0: Обычная земля
+	3: {"pass": true,  "cost": 0.6},  # 3: Дорога (идти по ней выгоднее!)
+	7: {"pass": true,  "cost": 0.6},  # 7: Мост (тоже выгодно)
+	8: {"pass": true,  "cost": 1.2},  # 8: Песок (идти чуть дороже)
+	# --- Непроходимые клетки ---
+	1: {"pass": false, "cost": 0.0}, 2: {"pass": false, "cost": 0.0},
+	4: {"pass": false, "cost": 0.0}, 5: {"pass": false, "cost": 0.0},
+	6: {"pass": false, "cost": 0.0}, 9: {"pass": false, "cost": 0.0},
+	10:{"pass": false, "cost": 0.0},
+}
 
 
+# Строит карту для навигации
+func build_nav_data(chunk_info: Dictionary, grid: Array) -> void:
+	print("[Следопыт] Начинаю строить навигационную карту...")
+	_size = Vector2i(int(chunk_info.get("w", 0)), int(chunk_info.get("h", 0)))
+	_blocked.clear()
+	_cost.clear()
 
-func build_nav_data(chunk_data: Dictionary, grid_data: Array) -> void:
-	_size = Vector2i(chunk_data["w"], chunk_data["h"])
-	_blocked_cells.clear()
-	_cost_map.clear()
+	if _size.x <= 0 or _size.y <= 0:
+		printerr("[Следопыт] ОШИБКА: Неправильный размер карты: ", _size); return
+	if grid.is_empty() or grid.size() != _size.y:
+		printerr("[Следопыт] ОШИБКА: Карта пустая или её высота не совпадает с размером!"); return
 
-	var passable_rules = {
-		0: 1, # floor
-		4: 1, # road
-		5: 2, # grass
-		6: 3, # forest
-		7: 4  # mountain
-	}
+	print("[Следопыт] Размер карты для постройки: ", _size)
 
-	for z in range(_size.y):
+	for y in range(_size.y):
+		var row = grid[y]
+		if row.size() != _size.x:
+			printerr("[Следопыт] ОШИБКА: Ряд %d имеет неправильную ширину!" % y); continue
+
 		for x in range(_size.x):
-			var tile_id = grid_data[z][x]
-			var cell = Vector2i(x, z)
-			if not tile_id in passable_rules:
-				_blocked_cells[cell] = true
-			else:
-				_cost_map[cell] = passable_rules[tile_id]
-
-	print("Pathfinder: Навигационные данные построены. Размер: ", _size)
-
-func find_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
-	print("Pathfinder: Запрошен реальный поиск пути от ", start, " до ", goal)
-
-	if not _is_walkable(goal):
-		print("Pathfinder: Целевая клетка непроходима.")
-		return []
-
-	var open_list: Dictionary = {}
-	var closed_list: Dictionary = {}
-	var came_from: Dictionary = {}
-
-	var start_node_g = 0
-	var start_node_h = _heuristic(start, goal)
-	open_list[start] = {"g": start_node_g, "h": start_node_h, "f": start_node_g + start_node_h}
-
-	while not open_list.is_empty():
-		var current_cell: Vector2i = open_list.keys()[0]
-		for cell: Vector2i in open_list.keys():
-			if open_list[cell]["f"] < open_list[current_cell]["f"]:
-				current_cell = cell
-
-		var current_node: Dictionary = open_list[current_cell]
-		open_list.erase(current_cell)
-		closed_list[current_cell] = current_node
-
-		if current_cell == goal:
-			return _reconstruct_path(came_from, current_cell)
-
-		for neighbor_cell in _get_neighbors(current_cell):
-			if closed_list.has(neighbor_cell):
-				continue
-
-			# --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-			var distance = 10 # Стоимость прямого шага
-			if abs(neighbor_cell.x - current_cell.x) == 1 and abs(neighbor_cell.y - current_cell.y) == 1:
-				distance = 14 # Стоимость диагонального шага (примерно 10 * sqrt(2))
+			var tile_type = row[x]
+			var rule: Dictionary = _rules.get(tile_type, {"pass": false, "cost": 0.0})
+			var cell := Vector2i(x, y)
 			
-			var tile_cost = _cost_map.get(neighbor_cell, 1)
-			var move_cost = tile_cost * distance
-			# --- КОНЕЦ ИЗМЕНЕНИЯ ---
+			if not rule.pass:
+				_blocked[cell] = true
+			else:
+				_cost[cell] = float(rule.cost)
 
-			var tentative_g_score = current_node.g + move_cost
+	print("[Следопыт] Карта построена! Заблокировано клеток: ", _blocked.size(), ", проходимых: ", _cost.size())
 
-			if not open_list.has(neighbor_cell):
-				var h_score = _heuristic(neighbor_cell, goal)
-				open_list[neighbor_cell] = {"g": tentative_g_score, "h": h_score, "f": tentative_g_score + h_score}
-				came_from[neighbor_cell] = current_cell
-			elif tentative_g_score < open_list[neighbor_cell]["g"]:
-				open_list[neighbor_cell]["g"] = tentative_g_score
-				open_list[neighbor_cell]["f"] = tentative_g_score + open_list[neighbor_cell]["h"]
-				came_from[neighbor_cell] = current_cell
 
-	print("Pathfinder: Путь не найден.")
+# Ищет путь из точки А в точку Б
+func find_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
+	print("[Следопыт] Ищу путь из ", start, " в ", goal)
+
+	if not _inside(start) or not _inside(goal):
+		printerr("[Следопыт] ОШИБКА: Старт или цель находятся за пределами карты!"); return []
+	if _is_blocked(start):
+		printerr("[Следопыт] ОШИБКА: Стартовая точка заблокирована!"); return []
+	if _is_blocked(goal):
+		printerr("[Следопыт] ОШИБКА: Цель заблокирована!"); return []
+
+	var open_set: Array[Vector2i] = [start]
+	var came_from: Dictionary = {}
+	var g_score: Dictionary = { start: 0.0 }
+	var f_score: Dictionary = { start: _heuristic(start, goal) }
+
+	while not open_set.is_empty():
+		open_set.sort_custom(func(a, b): return f_score.get(a, INF) < f_score.get(b, INF))
+		
+		# ИСПРАВЛЕНО (строка 94): Явно указываем тип для переменной 'current'
+		var current: Vector2i = open_set.pop_front()
+
+		if current == goal:
+			print("[Следопыт] Путь найден!")
+			return _reconstruct_path(came_from, current)
+
+		for neighbor in _neighbors(current):
+			# ИСПРАВЛЕНО (строка ~191): Явно указываем тип для 'step_cost'
+			var step_cost: float = _cost.get(neighbor, 1.0)
+			var move_cost := SQRT2 if (current.x != neighbor.x and current.y != neighbor.y) else 1.0
+			
+			# ИСПРАВЛЕНО (строка ~192): Явно указываем тип и приводим значение g_score к float
+			var tentative_g_score: float = float(g_score.get(current, INF)) + step_cost * move_cost
+
+			if tentative_g_score < g_score.get(neighbor, INF):
+				came_from[neighbor] = current
+				g_score[neighbor] = tentative_g_score
+				f_score[neighbor] = tentative_g_score + _heuristic(neighbor, goal)
+				if not open_set.has(neighbor):
+					open_set.append(neighbor)
+
+	print("[Следопыт] Не удалось найти путь.")
 	return []
 
-func _reconstruct_path(came_from: Dictionary, current: Vector2i) -> Array[Vector2i]:
-	var path: Array[Vector2i] = [current]
-	while came_from.has(current):
-		current = came_from[current]
-		path.push_front(current)
-	return path
 
-func _heuristic(a: Vector2i, b: Vector2i) -> int:
-	return max(abs(a.x - b.x), abs(a.y - b.y))
+# ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
 
-func _get_neighbors(cell: Vector2i) -> Array[Vector2i]:
-	var neighbors: Array[Vector2i] = []
-	for z in range(-1, 2):
-		for x in range(-1, 2):
-			if x == 0 and z == 0:
+func _inside(c: Vector2i) -> bool:
+	return c.x >= 0 and c.x < _size.x and c.y >= 0 and c.y < _size.y
+
+func _is_blocked(c: Vector2i) -> bool:
+	return _blocked.has(c)
+
+func _heuristic(a: Vector2i, b: Vector2i) -> float:
+	var dx: int = abs(a.x - b.x)
+	var dy: int = abs(a.y - b.y)
+	if allow_diagonals:
+		return (dx + dy) + (SQRT2 - 2.0) * float(min(dx, dy))
+	return float(dx + dy)
+
+func _neighbors(c: Vector2i) -> Array[Vector2i]:
+	var res: Array[Vector2i] = []
+	var dirs := [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0),
+				 Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, -1), Vector2i(-1, 1)] if allow_diagonals else \
+			   [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
+
+	for d in dirs:
+		# ИСПРАВЛЕНО (строка 208): Явно указываем тип для переменной 'n'
+		var n: Vector2i = c + d
+		
+		if not _inside(n) or _is_blocked(n):
+			continue
+		
+		if d.x != 0 and d.y != 0:
+			if _is_blocked(Vector2i(c.x + d.x, c.y)) or _is_blocked(Vector2i(c.x, c.y + d.y)):
 				continue
-			var neighbor = cell + Vector2i(x, z)
-			if neighbor.x >= 0 and neighbor.x < _size.x and \
-			   neighbor.y >= 0 and neighbor.y < _size.y and \
-			   _is_walkable(neighbor):
-				if abs(x) == 1 and abs(z) == 1:
-					var adjacent1 = cell + Vector2i(x, 0)
-					var adjacent2 = cell + Vector2i(0, z)
-					if _is_walkable(adjacent1) and _is_walkable(adjacent2):
-						neighbors.append(neighbor)
-				else:
-					neighbors.append(neighbor)
-	return neighbors
+		
+		res.append(n)
+	return res
 
-func _is_walkable(cell: Vector2i) -> bool:
-	return not _blocked_cells.has(cell)
+func _reconstruct_path(parent: Dictionary, cur: Vector2i) -> Array[Vector2i]:
+	var path: Array[Vector2i] = [cur]
+	while parent.has(cur):
+		# ИСПРАВЛЕНО (строка 158): Указываем точный тип 'as Vector2i'
+		cur = parent[cur] as Vector2i
+		path.push_front(cur)
+		
+	print("[Следопыт] Путь собран. Длина: ", path.size(), " клеток. Старт: ", path.front(), ", Финиш: ", path.back())
+	return path
